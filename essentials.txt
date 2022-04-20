@@ -1,0 +1,6 @@
+all modules needed
+
+cryptography
+numpy
+sounddevice
+msgpack-numpy
