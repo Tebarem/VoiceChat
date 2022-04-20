@@ -69,16 +69,19 @@ class Server:
     def acceptConnection(self):
         clients = dict()
         timeout = 5
+
         while True:
             try:
                 #This doesnt quiet work yet but still fixing it
                 d, a = self.udp_server.recvfrom(4096)
                 clients[a] = time.time()
+
                 for addr in clients.copy().keys():
                     if clients[addr] < (time.time() - timeout):
                         self.connections.remove(addr)
                         clients.pop(addr)
                         print("Removed!")
+
                 if a not in self.connections:
                     if d == b"connection":
                         self.udp_server.sendto(d,a)
@@ -88,13 +91,16 @@ class Server:
                         self.connections.append(a)
                         print(self.connections)
                         print("Get connecting from ", a)
+
                 else:
                     for c in self.connections:
                         if a != c:
                             self.udp_server.sendto(d, c)
+
             except Exception as ex:
                 print(traceback.format_exc())
                 print(self.connections)
+
                 if a in self.connections:
                     self.connections.remove(a)
                     clients.pop(a)
@@ -106,12 +112,13 @@ class Server:
         try:
             self.connections.remove(c)
             c.close()
+
         except Exception as ex:
             try:
                 c.close()
             except Exception as ex:
                 print(ex)
-                    
+ 
     def handler(self, data ,addr):
         try:
             #data = c.recv(4096)
@@ -121,10 +128,12 @@ class Server:
             #    break
             #print(data)
             d, a = self.udp_server.recvfrom(4096)
+
             if a == addr:
                 for c in self.connections:
                     if a != c:
                         self.udp_server.sendto(d, c)
+
             #data = msgpack.unpackb(data, object_hook=m.decode)
             #self.output_stream.write(data)
             #data = self.pucryp.decrypt(data).decode()
@@ -148,6 +157,7 @@ class Server:
         while True:
             counter = 0
             time.sleep(5)
+
             for i in self.loggedIN:
                 if i[1] == uuid:
                     for x in self.users:
@@ -164,10 +174,11 @@ class Server:
         while True:
             server_message = input()
             server_message = server_message.split()
-    #        server_message = "\nserver:{}\n".format(server_message)
-    #        server_message = self.pucryp.encrypt(bytes(server_message, 'utf-8'))
-    #        for c in self.connections:
-    #            c.send(self.pucryp.encrypt(bytes(server_message, 'utf-8')))
+
+            #  server_message = "\nserver:{}\n".format(server_message)
+            #  server_message = self.pucryp.encrypt(bytes(server_message, 'utf-8'))
+            #  for c in self.connections:
+            #      c.send(self.pucryp.encrypt(bytes(server_message, 'utf-8')))
                 
                 
 

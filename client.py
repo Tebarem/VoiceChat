@@ -15,6 +15,10 @@ import wave
 from cryptography.fernet import Fernet
 
 
+from utils import Parser, int_or_str
+
+
+
 class client(threading.Thread):
 	version = "0.1"
  
@@ -33,34 +37,43 @@ class client(threading.Thread):
 		#self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.isConnected = False
 
-  
+		self.parser = Parser()
 		#sounddevice stuff but i dont use this i think
-		self.parser = argparse.ArgumentParser(add_help=False)
-		self.parser.add_argument(
-			'-l', '--list-devices', action='store_true',
-			help='show list of audio devices and exit')
-		self.args, self.remaining = self.parser.parse_known_args()
-		if self.args.list_devices:
-			print(sd.query_devices())
-			self.parser.exit(0)
-		self.parser = argparse.ArgumentParser(
-			description=__doc__,
-			formatter_class=argparse.RawDescriptionHelpFormatter,
-			parents=[self.parser])
-		self.parser.add_argument(
-			'-i', '--input-device', type=self.int_or_str,
-			help='input device (numeric ID or substring)')
-		self.parser.add_argument(
-			'-o', '--output-device', type=self.int_or_str,
-			help='output device (numeric ID or substring)')
-		self.parser.add_argument(
-			'-c', '--channels', type=int, default=2,
-			help='number of channels')
-		self.parser.add_argument('--dtype', help='audio data type')
-		self.parser.add_argument('--samplerate', type=float, help='sampling rate')
-		self.parser.add_argument('--blocksize', type=int, help='block size')
-		self.parser.add_argument('--latency', type=float, help='latency in seconds')
-		self.args = self.parser.parse_args(self.remaining)
+		# self.parser = argparse.ArgumentParser(add_help=False)
+
+		# self.parser.add_argument(
+		# 	'-l', '--list-devices', action='store_true',
+		# 	help='show list of audio devices and exit'
+		# )
+
+		# self.args, self.remaining = self.parser.parse_known_args()
+
+		# if self.args.list_devices:
+		# 	print(sd.query_devices())
+		# 	self.parser.exit(0)
+
+		# self.parser = argparse.ArgumentParser(
+		# 	description=__doc__,
+		# 	formatter_class=argparse.RawDescriptionHelpFormatter,
+		# 	parents=[self.parser]
+		# )
+		# self.parser.add_argument(
+		# 	'-i', '--input-device', type=int_or_str,
+		# 	help='input device (numeric ID or substring)'
+		# )
+		# self.parser.add_argument(
+		# 	'-o', '--output-device', type=int_or_str,
+		# 	help='output device (numeric ID or substring)'
+		# )
+		# self.parser.add_argument(
+		# 	'-c', '--channels', type=int, default=2,
+		# 	help='number of channels'
+		# )
+		# self.parser.add_argument('--dtype', help='audio data type')
+		# self.parser.add_argument('--samplerate', type=float, help='sampling rate')
+		# self.parser.add_argument('--blocksize', type=int, help='block size')
+		# self.parser.add_argument('--latency', type=float, help='latency in seconds')
+		# self.args = self.parser.parse_args(self.remaining)
 		
 
 		#public ip here to send data to (replace 0.0.0.0 with the ip of the server)
@@ -77,12 +90,16 @@ class client(threading.Thread):
 		''' Sending connection request to the server node '''
 
 		#init the out stream and start it
-		self.output_stream =sd.OutputStream(device=sd.default.device[1],
-							samplerate=44100, blocksize=8192,
-							dtype="int16", latency=0,
-							channels=1)
+		self.output_stream = sd.OutputStream(
+			device=sd.default.device[1],
+			samplerate=44100, blocksize=8192,
+			dtype="int16", latency=0,
+			channels=1				
+		)
+
 		self.output_stream.start()
 		server = (self.server_ip, self.server_port)
+
 		while not self.isConnected:
 			try:
 				#self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -95,6 +112,7 @@ class client(threading.Thread):
 				Receiving_cio.start()
 				self.isConnected = True
 				break
+
 			except Exception as ex:
 				#[WinError 10054] wifi problem
 				#[WinError 10061] server offline
@@ -108,14 +126,17 @@ class client(threading.Thread):
 		#Initial pack so that we are able to start recieving data from the server
 		self.udpsocket.sendto("connection".encode(), (self.server_ip,self.server_port))
 		data,a = self.udpsocket.recvfrom(4096)
+
 		if data.decode() != "connection":
 			pass
+
 		while True:
 			#try:
 			data, a = self.udpsocket.recvfrom(4096)
 			#data = self.pucryp.decrypt(data).decode().split(" ")
 			if not data:
 				print("No data")
+
 			else:
 				try:
 				#unpacker.feed(data)
@@ -124,6 +145,7 @@ class client(threading.Thread):
 					#for d in unpacker:
 					#	d = msgpack.unpackb(d, object_hook=m.decode)
 					self.output_stream.write(data)
+
 				except Exception as e:
 					print(e)
 	
@@ -132,14 +154,7 @@ class client(threading.Thread):
 			#	self.login = False
 			#	print("Reconnecting to server. . .")
 			#	break
-	
-	def int_or_str(self, text):
-		"""Helper function for argument parsing."""
-		try:
-			return int(text)
-		except ValueError:
-			return text
-	
+
 	def sendcmd(self, command):
 		#Send the audio in encoded numpy package
 		message = command
